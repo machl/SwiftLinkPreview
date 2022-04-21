@@ -30,6 +30,7 @@ class Regex {
     static let commentPattern = "<!--(.*?)-->"
     static let hrefPattern = ".*href=\"(.*?)\".*"
     static let pricePattern = "itemprop=\"price\" content=\"([^\"]*)\""
+    static let inputPattern = "<input(.*?)>"
 
     // Test regular expression
     static func test(_ string: String, regex: String) -> Bool {

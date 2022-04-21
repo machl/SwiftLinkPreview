@@ -463,6 +463,7 @@ extension SwiftLinkPreview {
         source = source.deleteTagByPattern(Regex.inlineScriptPattern)
         source = source.deleteTagByPattern(Regex.scriptPattern)
         source = source.deleteTagByPattern(Regex.commentPattern)
+        source = source.deleteTagByPattern(Regex.inputPattern)
 
         return source
 

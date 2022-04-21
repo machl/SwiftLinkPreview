@@ -34,6 +34,8 @@ open class SwiftLinkPreview: NSObject {
     static let titleMinimumRelevant: Int = 15
     static let decriptionMinimumRelevant: Int = 100
 
+    static let maxHtmlCharacter = 300000
+    
     public var session: URLSession
     public let workQueue: DispatchQueue
     public let responseQueue: DispatchQueue
@@ -310,7 +312,11 @@ extension SwiftLinkPreview {
                                         String.Encoding( rawValue: CFStringConvertEncodingToNSStringEncoding(
                                                 CFStringConvertIANACharSetNameToEncoding( $0 as CFString ) ) )
                                     } ?? .utf8
-                                    if let html = String( data: data, encoding: encoding ) {
+                                    if var html = String( data: data, encoding: encoding ) {
+                                        if html.count > SwiftLinkPreview.maxHtmlCharacter {
+                                            html = html.getSubstring(0, end: SwiftLinkPreview.maxHtmlCharacter-1)
+                                        }
+                                        html = html.deleteTagByPattern(Regex.commentPattern)
                                         let metas = Regex.pregMatchAll( html, regex: Regex.metaTagPattern, index: 1 )
                                         var shouldRefresh = true
                                         if metas.contains(where: { $0.contains("property=\"og:title\"") || $0.contains("property='og:title'")}) {
@@ -425,7 +431,11 @@ extension SwiftLinkPreview {
                 let source = NSString( data: data, encoding:
                     CFStringConvertEncodingToNSStringEncoding( CFStringConvertIANACharSetNameToEncoding( encoding as CFString ) ) ) {
                 if !cancellable.isCancelled {
-                    self.parseHtmlString(source as String, response: response, completion: completion)
+                    var sourceStr = source as String
+                    if sourceStr.count > SwiftLinkPreview.maxHtmlCharacter {
+                        sourceStr = sourceStr.getSubstring(0, end: SwiftLinkPreview.maxHtmlCharacter-1)
+                    }
+                    self.parseHtmlString(sourceStr, response: response, completion: completion)
                 }
             } else {
                 do {
@@ -435,7 +445,11 @@ extension SwiftLinkPreview {
 
                     if let source = source {
                         if !cancellable.isCancelled {
-                            self.parseHtmlString(source as String, response: response, completion: completion)
+                            var sourceStr = source as String
+                            if sourceStr.count > SwiftLinkPreview.maxHtmlCharacter {
+                                sourceStr = sourceStr.getSubstring(0, end: SwiftLinkPreview.maxHtmlCharacter-1)
+                            }
+                            self.parseHtmlString(sourceStr, response: response, completion: completion)
                         }
                     } else {
                         onError(.cannotBeOpened(sourceUrl.absoluteString))

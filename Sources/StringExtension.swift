@@ -82,6 +82,13 @@ extension String {
     }
 
     // Substring
+    
+    func getSubstring(_ start: Int, end: Int) -> String {
+        let startIndex = self.index(self.startIndex, offsetBy: start)
+        let endIndex = self.index(startIndex, offsetBy: end)
+        return String(self[startIndex..<endIndex])
+    }
+    
     func substring(_ start: Int, end: Int) -> String {
 
         return self.substring(NSRange(location: start, length: end - start))

@@ -267,7 +267,7 @@ extension SwiftLinkPreview {
     }
 
     // Unshorten URL by following redirections
-    fileprivate func unshortenURL(_ url: URL, cancellable: Cancellable, completion: @escaping (URL) -> Void, onError: @escaping (PreviewError) -> Void) {
+    fileprivate func unshortenURL(_ url: URL, cancellable: Cancellable, isRedirectURL: Bool = false, completion: @escaping (URL) -> Void, onError: @escaping (PreviewError) -> Void) {
 
         if cancellable.isCancelled {return}
 
@@ -311,15 +311,22 @@ extension SwiftLinkPreview {
                                                 CFStringConvertIANACharSetNameToEncoding( $0 as CFString ) ) )
                                     } ?? .utf8
                                     if let html = String( data: data, encoding: encoding ) {
-                                        for meta in Regex.pregMatchAll( html, regex: Regex.metaTagPattern, index: 1 ) {
+                                        let metas = Regex.pregMatchAll( html, regex: Regex.metaTagPattern, index: 1 )
+                                        var shouldRefresh = true
+                                        if metas.contains(where: { $0.contains("property=\"og:title\"") || $0.contains("property='og:title'")}) {
+                                            shouldRefresh = false
+                                        }
+                                        for meta in metas {
                                             if (meta.contains( "http-equiv=\"refresh\"" ) || meta.contains( "http-equiv='refresh'" )),
                                                let value = Regex.pregMatchFirst( meta, regex: Regex.metaTagContentPattern, index: 2 )?.decoded.extendedTrim,
                                                let redirectString = value.split( separator: ";" )
                                                                          .first( where: { $0.lowercased().starts( with: "url=" ) } )?
                                                                          .split( separator: "=", maxSplits: 1 ).last,
                                                let redirectURL = URL( string: self.addImagePrefixIfNeeded( String( redirectString ), url: url ) ) {
-                                                self.unshortenURL( redirectURL, cancellable: cancellable, completion: completion, onError: onError )
-                                                return
+                                                if shouldRefresh && !isRedirectURL {
+                                                    self.unshortenURL( redirectURL, cancellable: cancellable, isRedirectURL: true, completion: completion, onError: onError )
+                                                    return
+                                                }
                                             }
                                         }
                                     }
@@ -328,6 +335,7 @@ extension SwiftLinkPreview {
                                 self.workQueue.async {
                                     if !cancellable.isCancelled {
                                         completion( url )
+                                        task = nil
                                     }
                                 }
                             } ).resume()
@@ -343,7 +351,7 @@ extension SwiftLinkPreview {
                     } else {
                         task?.cancel()
                         task = nil
-                        self.unshortenURL(finalResult, cancellable: cancellable, completion: completion, onError: onError)
+                        self.unshortenURL(finalResult, cancellable: cancellable, isRedirectURL: true, completion: completion, onError: onError)
                     }
                 } else {
                     self.workQueue.async {

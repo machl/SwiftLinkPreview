@@ -672,26 +672,40 @@ extension SwiftLinkPreview {
                 if !values.isEmpty {
                     result.images = values
                     result.image = values.first
-                } else {
-                    // If no OpenGraph image found pick any from <img/> tag to show.
-                    let values = Regex.pregMatchAll(htmlCode, regex: Regex.imageTagPattern, index: 2)
-                    if !values.isEmpty {
-                        let imgs = values.map { self.addImagePrefixIfNeeded($0, result: result) }
-                        result.images = imgs
-                        result.image = imgs.first
-                    }
+                    return result
                 }
-
+                
+                let valuesFlipped = Regex.pregMatchAll(htmlCode, regex: Regex.secondaryImageTagPatternFlipped, index: 1)
+                if !valuesFlipped.isEmpty {
+                    result.images = valuesFlipped
+                    result.image = valuesFlipped.first
+                    return result
+                }
+                
+                // If no OpenGraph image found pick any from <img/> tag to show.
+                let values2 = Regex.pregMatchAll(htmlCode, regex: Regex.imageTagPattern, index: 2)
+                if !values2.isEmpty {
+                    let imgs = values2.map { self.addImagePrefixIfNeeded($0, result: result) }
+                    result.images = imgs
+                    result.image = imgs.first
+                }
             }
         } else {
-                let values = Regex.pregMatchAll(htmlCode, regex: Regex.secondaryImageTagPattern, index: 2)
-                if !values.isEmpty {
-                    result.images = values
-                    result.image = values.first
-                }
-                else{
-                    result.images = [self.addImagePrefixIfNeeded(mainImage ?? String(), result: result)]
-                }
+            let values = Regex.pregMatchAll(htmlCode, regex: Regex.secondaryImageTagPattern, index: 2)
+            if !values.isEmpty {
+                result.images = values
+                result.image = values.first
+                return result
+            }
+            
+            let valuesFlipped = Regex.pregMatchAll(htmlCode, regex: Regex.secondaryImageTagPatternFlipped, index: 1)
+            if !valuesFlipped.isEmpty {
+                result.images = valuesFlipped
+                result.image = valuesFlipped.first
+                return result
+            }
+            
+            result.images = [self.addImagePrefixIfNeeded(mainImage ?? String(), result: result)]
         }
         return result
     }
